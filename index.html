@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f6f2ea">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="一句">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+<title>一句</title>
+<script src="jszip.min.js"></script>
+<style>
+:root{
+  --bg:#f6f2ea; --card:#fffdf8; --ink:#2a2622; --muted:#8a8178; --line:#e6dfd3;
+  --accent:#b5562d; --accent-soft:#f3e3d8; --saved:#c7902a;
+  --serif:"Noto Serif SC","Songti SC","STSong",serif;
+  --sans:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root{--bg:#1b1916;--card:#24211d;--ink:#ece6dc;--muted:#9a9187;--line:#36312b;--accent:#e08a5f;--accent-soft:#3a2a20;--saved:#e0b04f}
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans)}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+.app{max-width:620px;margin:0 auto;min-height:100vh;padding-bottom:72px}
+header.top{position:sticky;top:0;padding-top:calc(14px + env(safe-area-inset-top))!important;z-index:5;background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:14px 18px}
+.brand{font-family:var(--serif);font-size:20px;font-weight:600;letter-spacing:2px}
+.brand small{font-family:var(--sans);font-size:12px;color:var(--muted);letter-spacing:0;margin-left:8px;font-weight:400}
+.pill{font-size:12px;color:var(--muted);border:1px solid var(--line);border-radius:99px;padding:4px 10px}
+nav.tabs{position:fixed;bottom:0;left:0;right:0;z-index:6;background:var(--card);border-top:1px solid var(--line);display:flex;justify-content:center}
+nav.tabs .inner{max-width:620px;width:100%;display:flex}
+nav.tabs button{flex:1;padding:12px 0 calc(12px + env(safe-area-inset-bottom));font-size:13px;color:var(--muted)}
+nav.tabs button.on{color:var(--accent);font-weight:600}
+nav.tabs svg{display:block;margin:0 auto 3px;width:22px;height:22px}
+.post{background:var(--card);border-bottom:1px solid var(--line);padding:18px 18px 12px;display:flex;gap:12px}
+.cover{flex:none;width:42px;height:60px;border-radius:4px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.18),inset -2px 0 0 rgba(0,0,0,.08);background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center;color:#fff;font-family:var(--serif);font-weight:600;font-size:11px;line-height:1.25;text-align:center;padding:4px;word-break:break-all}
+.cover img{width:100%;height:100%;object-fit:cover;display:block}
+.cover.big{width:64px;height:92px;font-size:14px;padding:6px}
+.card .head{display:flex;gap:14px;align-items:flex-start}
+.card .head .info{flex:1;min-width:0}
+.post .avatar{flex:none;width:40px;height:40px;border-radius:50%;display:grid;place-items:center;font-family:var(--serif);font-weight:600;color:#fff;font-size:17px}
+.post .body{flex:1;min-width:0}
+.post .meta{display:flex;align-items:baseline;gap:6px;font-size:13px;color:var(--muted)}
+.post .meta b{color:var(--ink);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:55%}
+.post .text{font-family:var(--serif);font-size:17px;line-height:1.8;margin:8px 0 10px;cursor:pointer;border-left:3px solid var(--accent-soft);padding-left:12px}
+mark.q{background:var(--accent-soft);color:inherit;border-radius:3px;padding:1px 0;scroll-margin-top:90px}
+.post.read .text{color:var(--muted)}
+.post .actions{display:flex;gap:22px;font-size:13px;color:var(--muted)}
+.post .actions button{display:flex;align-items:center;gap:5px;padding:4px 0}
+.post .actions svg{width:18px;height:18px}
+.post .actions .saved{color:var(--saved)}
+.end{text-align:center;padding:40px 24px;color:var(--muted);line-height:1.8}
+.end .big{font-family:var(--serif);font-size:20px;color:var(--ink);margin-bottom:6px}
+.btn{display:inline-block;background:var(--accent);color:#fff;border-radius:99px;padding:10px 20px;font-size:15px}
+.btn.ghost{background:none;color:var(--accent);border:1px solid var(--accent)}
+.btn.small{padding:6px 14px;font-size:13px}
+.btn:disabled{opacity:.5}
+.section{padding:18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:12px}
+.card h3{margin:0 0 4px;font-family:var(--serif);font-size:17px}
+.card p{margin:4px 0;color:var(--muted);font-size:13px;line-height:1.6}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+textarea,input[type=text],input[type=number]{width:100%;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px}
+textarea{min-height:120px;resize:vertical}
+.progress{height:4px;background:var(--line);border-radius:4px;overflow:hidden;margin-top:10px}
+.progress i{display:block;height:100%;background:var(--accent);width:0;transition:width .3s}
+.notice button{color:var(--accent);font-size:12px;margin-left:6px}
+.notice{font-size:12px;color:var(--muted);background:var(--accent-soft);border-radius:10px;padding:10px 12px;margin:12px 18px;line-height:1.6}
+/* reader */
+.reader{position:fixed;inset:0;z-index:20;background:var(--bg);overflow-y:auto;display:none}
+.reader.open{display:block}
+.reader .bar{padding-top:calc(12px + env(safe-area-inset-top))!important;position:sticky;top:0;background:color-mix(in srgb,var(--bg) 94%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;padding:12px 14px}
+.reader .bar .t{flex:1;min-width:0;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--muted)}
+.reader article{max-width:640px;margin:0 auto;padding:22px 22px 60px;font-family:var(--serif);font-size:18px;line-height:1.95}
+.reader article h2{font-size:22px;margin:10px 0 6px;line-height:1.5}
+.reader article .hook{font-size:14px;color:var(--accent);background:var(--accent-soft);border-radius:10px;padding:10px 12px;margin:10px 0 22px;line-height:1.7;font-family:var(--sans)}
+.reader article p{margin:0 0 1em;text-indent:2em}
+.reader .chend{text-align:center;color:var(--muted);font-size:13px;font-family:var(--sans);margin:24px 0 36px}
+.reader .next{text-align:center;padding:10px 0 40px}
+.modal{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.4);display:none;align-items:center;justify-content:center;padding:24px}
+.modal.open{display:flex}
+.modal .box{background:var(--card);border-radius:16px;padding:20px;max-width:360px;width:100%}
+.modal .box p{line-height:1.7;margin:0 0 16px}
+.empty{padding:60px 28px;text-align:center;color:var(--muted);line-height:1.8}
+.chlist{max-height:260px;overflow:auto;margin-top:8px;border-top:1px solid var(--line)}
+.chlist button{display:block;width:100%;text-align:left;padding:8px 2px;border-bottom:1px solid var(--line);font-size:14px}
+label.f{display:block;font-size:13px;color:var(--muted);margin:10px 0 4px}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand">一句<small>每条帖子，都是一章书</small></div>
+    <span class="pill" id="quota">今日 0/15</span>
+  </header>
+  <div id="storageNote" class="notice hidden"></div>
+  <main id="view"></main>
+</div>
+
+<nav class="tabs"><div class="inner">
+  <button data-tab="feed" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 11l8-7 8 7v9a1 1 0 0 1-1 1h-5v-6h-4v6H5a1 1 0 0 1-1-1z"/></svg>首页</button>
+  <button data-tab="saved"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h12v18l-6-4-6 4z"/></svg>收藏</button>
+  <button data-tab="shelf"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h4v16H4zM10 4h4v16h-4zM16 5l3.5-.8 3 15.6-3.5.8z"/></svg>书架</button>
+</div></nav>
+
+<div class="reader" id="reader">
+  <div class="bar">
+    <button id="rBack" aria-label="返回"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 5l-7 7 7 7"/></svg></button>
+    <div class="t" id="rTitle"></div>
+    <button id="rSave" class="pill">收藏</button>
+  </div>
+  <article id="rBody"></article>
+</div>
+
+<div class="modal" id="modal"><div class="box"><p id="mText"></p><div class="row" style="justify-content:flex-end"><button class="btn ghost small" id="mNo">取消</button><button class="btn small" id="mYes">确定</button></div></div></div>
+
+<script>
+/* ============ 存储层：优先云端 db（个人私有），否则本机 IndexedDB ============ */
+const Store = {
+  mode:'none', db:null, uid:null, idb:null,
+  async init(){
+    try{ if(navigator.storage&&navigator.storage.persist) navigator.storage.persist(); }catch(e){}
+    try{ this.idb = await new Promise((res,rej)=>{ const r=indexedDB.open('yiju',1); r.onupgradeneeded=()=>r.result.createObjectStore('kv'); r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }); this.mode='local'; }
+    catch(e){ this.mode='memory'; this.mem=new Map(); }
+  },
+  async all(){
+    if(this.mode!=='local') return [...this.mem.entries()];
+    return new Promise((res)=>{const out=[];const r=this.idb.transaction('kv').objectStore('kv').openCursor();r.onsuccess=()=>{const c=r.result;if(c){out.push([c.key,c.value]);c.continue();}else res(out);};});
+  },
+  col(){ return this.db.collection('data/users/'+this.uid); },
+  async put(key,obj){
+    if(this.mode==='cloud') return this.col().doc(key).set(obj);
+    if(this.mode==='local') return new Promise((res,rej)=>{const t=this.idb.transaction('kv','readwrite');t.objectStore('kv').put(obj,key);t.oncomplete=res;t.onerror=()=>rej(t.error);});
+    this.mem.set(key,obj);
+  },
+  async get(key){
+    if(this.mode==='cloud'){ const s=await this.col().doc(key).get(); return s.exists?JSON.parse(JSON.stringify(s.data())):null; }
+    if(this.mode==='local') return new Promise((res,rej)=>{const r=this.idb.transaction('kv').objectStore('kv').get(key);r.onsuccess=()=>res(r.result||null);r.onerror=()=>rej(r.error);});
+    return this.mem.get(key)||null;
+  },
+  async del(key){
+    if(this.mode==='cloud') return this.col().doc(key).delete();
+    if(this.mode==='local') return new Promise((res)=>{const t=this.idb.transaction('kv','readwrite');t.objectStore('kv').delete(key);t.oncomplete=res;});
+    this.mem.delete(key);
+  },
+  async list(kind){
+    if(this.mode==='cloud'){ const s=await this.col().where('kind','==',kind).limit(1000).get(); return s.docs.map(d=>JSON.parse(JSON.stringify(d.data()))); }
+    if(this.mode==='local') return new Promise((res)=>{const out=[];const r=this.idb.transaction('kv').objectStore('kv').openCursor();r.onsuccess=()=>{const c=r.result;if(c){if(c.value&&c.value.kind===kind)out.push(c.value);c.continue();}else res(out);};});
+    return [...this.mem.values()].filter(v=>v.kind===kind);
+  }
+};
+const LS = { get(k,d){try{const v=localStorage.getItem('yiju_'+k);return v==null?d:JSON.parse(v);}catch(e){return d;}}, set(k,v){try{localStorage.setItem('yiju_'+k,JSON.stringify(v));}catch(e){}} };
+
+/* ============ 状态 ============ */
+const S = { books:[], posts:[], tab:'feed', busy:null };
+const uid = () => Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const COLORS=['#b5562d','#5d7a5a','#4a6a8a','#8a5a7a','#a0782f','#5a6f73','#7a5a44'];
+const colorFor = s => { let h=0; for(const c of s) h=(h*31+c.charCodeAt(0))>>>0; return COLORS[h%COLORS.length]; };
+const today = () => new Date().toISOString().slice(0,10);
+function seenToday(){ const v=LS.get('seen2',{d:'',ids:[]}); return v.d===today()?v.ids:[]; }
+function markSeen(ids){ const cur=new Set(seenToday()); ids.forEach(i=>cur.add(i)); LS.set('seen2',{d:today(),ids:[...cur]}); }
+const dailyCap = () => LS.get('cap',15);
+
+/* ============ 导入与切分章节 ============ */
+const CH_RE = /^[\s　]*((第[0-9０-９零〇一二三四五六七八九十百千万两]+[章回节卷篇部集幕].{0,30})|((Chapter|CHAPTER)\s+[0-9IVXLC]+.{0,40})|(序[章言]?|楔子|引子|前言|尾声|后记|番外.{0,20}))[\s　]*$/;
+function splitTxt(text){
+  const lines=text.replace(/\r\n?/g,'\n').split('\n');
+  const chs=[]; let cur=null;
+  for(const ln of lines){
+    if(CH_RE.test(ln) && ln.trim().length<=40){ if(cur) chs.push(cur); cur={title:ln.trim(),lines:[]}; }
+    else { if(!cur) cur={title:'开篇',lines:[]}; cur.lines.push(ln); }
+  }
+  if(cur) chs.push(cur);
+  let out=chs.map(c=>({title:c.title,text:c.lines.join('\n').trim()})).filter(c=>c.text.length>30);
+  if(out.length<=1){ // 没有章节标记：按段落切成约 3000 字一节
+    const paras=text.split(/\n\s*\n|\n/).map(s=>s.trim()).filter(Boolean); out=[]; let buf='';
+    for(const p of paras){ buf+=(buf?'\n':'')+p; if(buf.length>3000){ out.push({title:'第'+(out.length+1)+'节',text:buf}); buf=''; } }
+    if(buf) out.push({title:'第'+(out.length+1)+'节',text:buf});
+  }
+  return out;
+}
+function decodeTxt(buf){
+  let t=new TextDecoder('utf-8').decode(buf);
+  const bad=(t.match(/\uFFFD/g)||[]).length;
+  if(bad>20){ try{ t=new TextDecoder('gb18030').decode(buf); }catch(e){} }
+  return t;
+}
+function htmlToText(html){
+  const doc=new DOMParser().parseFromString(html,'text/html');
+  doc.querySelectorAll('script,style').forEach(n=>n.remove());
+  const blocks=[...doc.body.querySelectorAll('p,h1,h2,h3,h4,div,li,blockquote')].filter(n=>!n.querySelector('p,div,li,blockquote'));
+  const title=(doc.querySelector('h1,h2,h3')||{}).textContent;
+  const text=(blocks.length?blocks.map(b=>b.textContent.trim()):[doc.body.textContent]).filter(Boolean).join('\n');
+  return {title:title&&title.trim(), text:text.trim()};
+}
+async function parseEpub(file){
+  const zip=await JSZip.loadAsync(file);
+  const cont=await zip.file('META-INF/container.xml').async('string');
+  const opfPath=cont.match(/full-path="([^"]+)"/)[1]; const base=opfPath.includes('/')?opfPath.replace(/[^/]+$/,''):'';
+  const opf=new DOMParser().parseFromString(await zip.file(opfPath).async('string'),'application/xml');
+  const bookTitle=(opf.getElementsByTagName('dc:title')[0]||{}).textContent||file.name.replace(/\.epub$/i,'');
+  const items={}; [...opf.getElementsByTagName('item')].forEach(i=>items[i.getAttribute('id')]=i.getAttribute('href'));
+  const spine=[...opf.getElementsByTagName('itemref')].map(r=>items[r.getAttribute('idref')]).filter(Boolean);
+  const chs=[];
+  for(const href of spine){
+    const f=zip.file(decodeURIComponent(base+href).replace(/#.*$/,'')) || zip.file(base+href);
+    if(!f) continue;
+    const {title,text}=htmlToText(await f.async('string'));
+    if(text.length<200) continue; // 封面、版权页等
+    chs.push({title:title||('第'+(chs.length+1)+'节'),text});
+  }
+  let cover=null; try{ cover=await epubCover(zip,opf,base,items); }catch(e){}
+  return {title:bookTitle.trim(),chapters:chs,cover};
+}
+async function epubCover(zip,opf,base,items){
+  const all=[...opf.getElementsByTagName('item')];
+  let href=null;
+  const prop=all.find(i=>/cover-image/.test(i.getAttribute('properties')||'')); if(prop) href=prop.getAttribute('href');
+  if(!href){ const m=[...opf.getElementsByTagName('meta')].find(m=>m.getAttribute('name')==='cover'); if(m){ const id=m.getAttribute('content'); href=items[id]; } }
+  if(!href){ const c=all.find(i=>/image\//.test(i.getAttribute('media-type')||'') && /cover/i.test((i.getAttribute('id')||'')+(i.getAttribute('href')||''))); if(c) href=c.getAttribute('href'); }
+  if(!href){ const c=all.find(i=>/image\//.test(i.getAttribute('media-type')||'')); if(c) href=c.getAttribute('href'); }
+  if(!href) return null;
+  const f=zip.file(decodeURIComponent(base+href))||zip.file(base+href); if(!f) return null;
+  const ext=(href.split('.').pop()||'').toLowerCase();
+  const type=ext==='png'?'image/png':ext==='gif'?'image/gif':ext==='webp'?'image/webp':ext==='svg'?'image/svg+xml':'image/jpeg';
+  return shrinkImage(new Blob([await f.async('arraybuffer')],{type}));
+}
+// 缩成小图存起来（约 180px 宽），足够当头像和书架封面
+function shrinkImage(blob){
+  return new Promise((res)=>{
+    const url=URL.createObjectURL(blob); const img=new Image();
+    img.onload=()=>{ const W=180, sc=Math.min(1,W/img.naturalWidth); const c=document.createElement('canvas');
+      c.width=Math.max(1,Math.round(img.naturalWidth*sc)); c.height=Math.max(1,Math.round(img.naturalHeight*sc));
+      const g=c.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,c.width,c.height); g.drawImage(img,0,0,c.width,c.height);
+      URL.revokeObjectURL(url); try{ res(c.toDataURL('image/jpeg',0.82)); }catch(e){ res(null); } };
+    img.onerror=()=>{ URL.revokeObjectURL(url); res(null); };
+    img.src=url;
+  });
+}
+function coverHTML(book,title,big){
+  const t=(book&&book.title)||title||'';
+  if(book&&book.cover) return `<div class="cover${big?' big':''}"><img src="${book.cover}" alt=""></div>`;
+  return `<div class="cover${big?' big':''}" style="background:linear-gradient(160deg,${colorFor(t)},color-mix(in srgb,${colorFor(t)} 70%,#000))">${esc(t.slice(0,big?8:4))}</div>`;
+}
+// 把太短的章节合并成一个“单元”，一条帖子覆盖一章或几章
+function makeUnits(chs){
+  const units=[]; let u=null;
+  chs.forEach((c,i)=>{
+    if(!u) u={start:i,end:i,len:0};
+    u.end=i; u.len+=c.text.length;
+    if(u.len>=1500 || u.end-u.start>=2){ units.push(u); u=null; }
+  });
+  if(u){ if(units.length && u.len<800){ const last=units[units.length-1]; last.end=u.end; last.len+=u.len; } else units.push(u); }
+  return units;
+}
+const CHUNK=60000;
+async function saveBook(title,chapters,cover){
+  const id=uid();
+  const book={kind:'book',id,title,author:'',count:chapters.length,titles:chapters.map(c=>c.title),cover:cover||null,createdAt:Date.now()};
+  for(let i=0;i<chapters.length;i++){
+    const t=chapters[i].text; const parts=Math.max(1,Math.ceil(t.length/CHUNK));
+    for(let p=0;p<parts;p++) await Store.put(`tx_${id}_${i}_${p}`,{kind:'text',t:t.slice(p*CHUNK,(p+1)*CHUNK),parts});
+    setBusy(`保存章节 ${i+1}/${chapters.length}`, (i+1)/chapters.length*0.3);
+  }
+  await Store.put('bk_'+id,book);
+  S.books.push(book);
+  return book;
+}
+async function loadChapter(bookId,i){
+  const first=await Store.get(`tx_${bookId}_${i}_0`); if(!first) return '';
+  let t=first.t; for(let p=1;p<(first.parts||1);p++){ const d=await Store.get(`tx_${bookId}_${i}_${p}`); t+=d?d.t:''; }
+  return t;
+}
+
+/* ============ 用 Claude 生成“一句话” ============ */
+const AI={ get(){ return Object.assign({key:'',base:'https://api.deepseek.com',model:'deepseek-v4-flash'},LS.get('ai',{})); }, set(v){ LS.set('ai',v); } };
+async function aiFetch(path,opts){
+  const c=AI.get();
+  const r=await fetch(c.base.replace(/\/+$/,'')+path,Object.assign({},opts,{headers:{'Content-Type':'application/json','Authorization':'Bearer '+c.key}}));
+  if(!r.ok){ const e=new Error('HTTP '+r.status); e.status=r.status; try{ const j=await r.json(); e.detail=(j.error&&j.error.message)||''; }catch(_){} throw e; }
+  return r.json();
+}
+async function callAI(prompt){
+  const c=AI.get();
+  const j=await aiFetch('/chat/completions',{method:'POST',body:JSON.stringify({model:c.model,temperature:0.7,response_format:{type:'json_object'},
+    messages:[{role:'system',content:'你是一个眼光很好的中文文学编辑，只输出 JSON。'},{role:'user',content:prompt}]})});
+  const txt=(j.choices&&j.choices[0]&&j.choices[0].message&&j.choices[0].message.content)||'';
+  return JSON.parse(txt.replace(/^\s*```(json)?/,'').replace(/```\s*$/,'').trim());
+}
+function aiErrText(e){
+  if(!e) return '';
+  if(e.status===401||e.status===403) return 'API key 不对或已失效';
+  if(e.status===402) return '账户余额不足';
+  if(e.status===400&&/model/i.test(e.detail||'')) return '模型名不可用，去设置里点“测试连接”看看能用哪些';
+  if(e.status) return '接口返回错误 '+e.status+(e.detail?'：'+e.detail:'');
+  return '连不上接口（检查网络）';
+}
+const norm = s => s.replace(/[\s　]+/g,'');
+const sentences = t => (t.replace(/\r/g,'').match(/[^。！？!?…\n]+[。！？!?…」”’"]*[」”’"]?/g)||[]).map(x=>x.trim()).filter(Boolean);
+// 没有 Claude 时的兜底：按“像金句”的特征给句子打分
+function pickLine(text){
+  const ss=sentences(text); if(!ss.length) return text.slice(0,120);
+  const score=(x,i)=>{ let sc=0; if(/[？?]/.test(x)) sc+=8; if(/[！!]/.test(x)) sc+=4; if(/[“「"]/.test(x)) sc+=6;
+    if(/原来|竟然|从来|永远|忽然|突然|其实|不是|才|却|但是|然而/.test(x)) sc+=6; return sc; };
+  let best=ss.slice(0,3).join(''), bs=-1e9;
+  for(let i=0;i<ss.length;i++){ let w='', sc=0;
+    for(let j=i;j<Math.min(ss.length,i+5);j++){ w+=ss[j]; sc+=score(ss[j],j); const L=w.length;
+      if(L>=50&&L<=150){ const t=sc-Math.abs(L-100)/10-(i===0?8:0)+Math.sin(i*7.1)*2; if(t>bs){bs=t;best=w;} }
+      if(L>150) break; } }
+  return best;
+}
+// 校验 Claude 给的摘录确实出自原文；对不上的部分丢掉
+function verifyQuote(q,full){
+  if(!q||typeof q!=='string') return null;
+  const F=norm(full); q=q.trim().replace(/^[“"「『]+|[”"」』]+$/g,'');
+  if(q.length>=6 && F.includes(norm(q))) return q;
+  const ok=sentences(q).filter(x=>x.length>=6 && F.includes(norm(x)));
+  return ok.length? ok.join('') : null;
+}
+async function genPosts(book){
+  const useAI=!!AI.get().key; S.aiErr='';
+  const old={}; S.posts.filter(p=>p.bookId===book.id).forEach(p=>old[p.start]=p);
+  const chs=[]; for(let i=0;i<book.count;i++){ chs.push({title:book.titles[i],text:await loadChapter(book.id,i)}); }
+  const us=makeUnits(chs);
+  const BATCH=3; let done=0;
+  for(let b=0;b<us.length;b+=BATCH){
+    const group=us.slice(b,b+BATCH);
+    const full=group.map(u=>chs.slice(u.start,u.end+1).map(c=>c.text).join('\n'));
+    const payload=group.map((u,k)=>{
+      const txt=chs.slice(u.start,u.end+1).map(c=>'【'+c.title+'】\n'+c.text).join('\n\n');
+      const clip=txt.length>9000? txt.slice(0,9000)+'\n（后略）' : txt;
+      return `<unit n="${k}">\n${clip}\n</unit>`;
+    }).join('\n');
+    let lines=null;
+    if(useAI && !S.aiErr){
+      const prompt=`下面是《${book.title}》的若干单元（每个单元是一章或几章）。这些摘录会作为读书 App 信息流里的“帖子”，唯一的目的：让一个正想刷手机的人被勾住，忍不住点开读这一章。\n\n请为每个单元从原文中摘出最有吸引力的一段：\n- 一字不改地照抄原文里连续的一段，可以是 2～6 句，总长 50～150 字（手机上三四行）。宁可多带一两句上下文，让它自成一个小场景，也不要只剩一句干巴巴的话\n- 先在心里比较这一单元里的几个候选段落，再选最强的那段。好的摘录通常有：一个具体的场景或细节、一句有劲的对白、一个反常或反直觉的判断、一个悬而未决的冲突、一个让人心里一动的比喻\n- 不要选：章节开头的铺垫和交代、平铺直叙的过渡、泛泛的道理、目录注释，也不要把本章的结局揭穿\n- 读起来要像一条让人停下来的动态：最好结尾留一点“然后呢？”\n- 不要加引号、省略号或任何评论\n只输出 JSON：{"posts":["单元0的摘录","单元1的摘录"]}，数量必须等于 ${group.length}。\n\n${payload}`;
+      for(let attempt=0;attempt<2 && !lines;attempt++){
+        try{
+          const r=await callAI(prompt);
+          if(r && Array.isArray(r.posts)) lines=r.posts;
+        }catch(e){
+          if(e && e.status===429){ setBusy('请求太频繁，稍等一下…'); await new Promise(r=>setTimeout(r,8000)); }
+          else if(e instanceof SyntaxError){ /* 返回的不是合法 JSON，重试一次 */ }
+          else { S.aiErr=aiErrText(e); break; }
+        }
+      }
+    }
+    for(let k=0;k<group.length;k++){
+      const u=group[k];
+      const q=lines? verifyQuote(lines[k],full[k]) : null;
+      const line=q || pickLine(full[k]);
+      const label= u.start===u.end ? chs[u.start].title : `${chs[u.start].title} – ${chs[u.end].title}`;
+      const prev=old[u.start];
+      const post={kind:'post',id:prev?prev.id:uid(),bookId:book.id,bookTitle:book.title,start:u.start,end:u.end,label,text:line,quote:true,ai:!!q,saved:prev?prev.saved:false,savedAt:prev?prev.savedAt:0,read:prev?prev.read:false,createdAt:prev?prev.createdAt:Date.now()+b+k};
+      await Store.put('po_'+post.id,post);
+      S.posts=S.posts.filter(p=>p.id!==post.id); S.posts.push(post); delete old[u.start];
+    }
+    done+=group.length; setBusy(`挑选金句 ${done}/${us.length}`, 0.3+0.7*done/us.length);
+  }
+  for(const p of Object.values(old)){ await Store.del('po_'+p.id); S.posts=S.posts.filter(x=>x.id!==p.id); }
+}
+
+/* ============ 渲染 ============ */
+const $=s=>document.querySelector(s);
+const ICON={
+  save:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h12v18l-6-4-6 4z"/></svg>',
+  saved:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 3h12v18l-6-4-6 4z"/></svg>',
+  read:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 5h7a2 2 0 0 1 2 2v13a2 2 0 0 0-2-2H3zM21 5h-7a2 2 0 0 0-2 2v13a2 2 0 0 1 2-2h7z"/></svg>'
+};
+function postHTML(p){
+  const t=p.bookTitle||'';
+  return `<div class="post ${p.read?'read':''}" data-id="${p.id}">
+    ${coverHTML(S.books.find(b=>b.id===p.bookId),t)}
+    <div class="body">
+      <div class="meta"><b>${esc(t)}</b><span>· ${esc(p.label)}</span></div>
+      <div class="text" data-open="${p.id}">${esc(p.text)}</div>
+      <div class="actions">
+        <button data-open="${p.id}">${ICON.read}去读原章</button>
+        <button data-save="${p.id}" class="${p.saved?'saved':''}">${p.saved?ICON.saved+'已收藏':ICON.save+'稍后读'}</button>
+      </div>
+    </div></div>`;
+}
+// 混排：每本书按剩余条数加权随机抽取，尽量不让同一本书连着出现
+function shuffleMix(posts){
+  const byBook={}; posts.forEach(p=>(byBook[p.bookId]=byBook[p.bookId]||[]).push(p));
+  for(const a of Object.values(byBook)) for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
+  const out=[]; let last=null;
+  while(true){
+    const ks=Object.keys(byBook).filter(k=>byBook[k].length); if(!ks.length) break;
+    let pool=ks.length>1? ks.filter(k=>k!==last) : ks;
+    let r=Math.random()*pool.reduce((t,k)=>t+byBook[k].length,0), pick=pool[0];
+    for(const k of pool){ r-=byBook[k].length; if(r<=0){ pick=k; break; } }
+    out.push(byBook[pick].shift().id); last=pick;
+  }
+  return out;
+}
+// 排序存起来：导入新书 / 重新挑句时重新混排，每天也换一次
+function reshuffle(){ LS.set('order',{d:today(),ids:shuffleMix(S.posts)}); }
+function feedOrder(){
+  let o=LS.get('order',null); const ids=new Set(S.posts.map(p=>p.id));
+  if(!o || o.d!==today() || S.posts.some(p=>!o.ids.includes(p.id))){ reshuffle(); o=LS.get('order',null)||{ids:shuffleMix(S.posts)}; }
+  const byId=Object.fromEntries(S.posts.map(p=>[p.id,p]));
+  return o.ids.filter(id=>ids.has(id)).map(id=>byId[id]);
+}
+function updateQuota(){ $('#quota').textContent=`今日 ${Math.min(seenToday().length,dailyCap())}/${dailyCap()}`; }
+// 只有真正划到眼前的帖子才算“刷过”
+let seenObs=null;
+function watchSeen(){
+  if(seenObs) seenObs.disconnect();
+  if(!('IntersectionObserver' in window)){ markSeen([...document.querySelectorAll('#view .post')].map(n=>n.dataset.id)); updateQuota(); return; }
+  seenObs=new IntersectionObserver(es=>{ const ids=es.filter(e=>e.isIntersecting).map(e=>e.target.dataset.id); if(ids.length){ markSeen(ids); updateQuota(); } },{threshold:0.6});
+  document.querySelectorAll('#view .post').forEach(n=>seenObs.observe(n));
+}
+function render(){
+  document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===S.tab));
+  updateQuota();
+  const v=$('#view');
+  if(S.tab==='feed') v.innerHTML=renderFeed();
+  if(S.tab==='saved') v.innerHTML=renderSaved();
+  if(S.tab==='shelf') v.innerHTML=renderShelf();
+  if(S.tab==='feed') watchSeen(); else if(seenObs) seenObs.disconnect();
+}
+function renderFeed(){
+  if(!S.posts.length) return `<div class="empty"><div class="end"><div class="big">还没有书</div>去「书架」导入一本 EPUB 或 TXT，<br>每一章会变成一条帖子。</div><button class="btn" data-go="shelf">去导入</button></div>`;
+  const cap=dailyCap(); const seen=new Set(seenToday());
+  const order=feedOrder().filter(p=>!p.read);
+  // 按混排顺序往下取：今天已经看过的照常显示，没看过的只补到额度为止
+  let slots=Math.max(0,cap-seen.size); const show=[];
+  for(const p of order){ if(seen.has(p.id)) show.push(p); else if(slots>0){ show.push(p); slots--; } }
+  let html=show.map(postHTML).join('');
+  if(!order.length) html+=`<div class="end"><div class="big">全部读完了</div>书架里的每一章都翻过了。换一本新书吧。</div>`;
+  else if(show.length<order.length){
+    const saved=S.posts.filter(p=>p.saved&&!p.read).length;
+    html+=`<div class="end"><div class="big">今天就刷到这里</div>今天的 ${cap} 条额度用完了。与其继续往下滑，<br>不如挑一条，读完那一章。${saved?`<br><br><button class="btn ghost small" data-go="saved">去看 ${saved} 条收藏</button>`:''}</div>`;
+  } else html+=`<div class="end">就这些了，书架里的帖子都在这儿。</div>`;
+  return html;
+}
+function renderSaved(){
+  const list=S.posts.filter(p=>p.saved).sort((a,b)=>(b.savedAt||0)-(a.savedAt||0));
+  if(!list.length) return `<div class="empty">还没有收藏。<br>在首页点「稍后读」，感兴趣的一句会留在这里。</div>`;
+  return list.map(postHTML).join('');
+}
+function renderShelf(){
+  const busy=S.busy;
+  let h=`<div class="section">
+  <div class="card">
+    <h3>导入一本书</h3>
+    <p>支持 EPUB 和 TXT（自动识别“第X章 / 第X回 / Chapter”）。较短的章节会合并，一条帖子覆盖一章或几章。</p>
+    <div class="row"><label class="btn small" style="cursor:pointer">选择文件<input type="file" id="file" accept=".epub,.txt,text/plain,application/epub+zip" hidden></label>
+    <button class="btn ghost small" data-act="paste">粘贴文本</button></div>
+    <div id="pasteBox" class="hidden"><label class="f">书名</label><input type="text" id="pTitle" placeholder="例如：我的读书笔记"><label class="f">正文</label><textarea id="pText" placeholder="把整本书或几章粘贴进来"></textarea><div class="row"><button class="btn small" data-act="pasteGo">导入</button></div></div>
+    ${busy?`<p style="margin-top:10px">${esc(busy.msg)}</p><div class="progress"><i style="width:${Math.round((busy.p||0)*100)}%"></i></div>`:''}
+  </div>`;
+  if(S.books.length) h+=`<div class="card"><h3>重新挑摘录</h3><p>让所有书按新规则重新挑一遍（收藏和已读会保留）。</p><div class="row"><button class="btn ghost small" data-act="regenAll" ${busy?'disabled':''}>全部重新挑</button></div></div>`;
+  if(!S.books.length) h+=`<div class="card"><h3>先试试看？</h3><p>载入一本很短的示例书，看看帖子长什么样。</p><div class="row"><button class="btn ghost small" data-act="demo">载入示例</button></div></div>`;
+  for(const b of [...S.books].sort((x,y)=>y.createdAt-x.createdAt)){
+    const ps=S.posts.filter(p=>p.bookId===b.id); const rs=readSet(b); const rd=rs.size;
+    const nextCh=[...Array(b.count).keys()].find(i=>!rs.has(i));
+    h+=`<div class="card"><div class="head"><label style="cursor:pointer" title="换封面">${coverHTML(b,'',true)}<input type="file" hidden data-cover="${b.id}" accept="image/*,.epub,application/epub+zip"></label><div class="info"><h3>${esc(b.title)}</h3><p>${b.count} 章 · ${ps.length} 条帖子 · 已读 ${rd}/${b.count} 章</p><div class="row" style="margin-top:6px"><label class="btn ghost small" style="cursor:pointer">${b.cover?'换封面':'上传封面'}<input type="file" hidden data-cover="${b.id}" accept="image/*"></label></div></div></div>
+      <div class="progress"><i style="width:${Math.round(rd/b.count*100)}%"></i></div>
+      <div class="row">${nextCh!==undefined?`<button class="btn small" data-chap="${b.id}:${nextCh}">${rd?'继续读':'开始读'}</button>`:''}<button class="btn ghost small" data-toc="${b.id}">目录</button><button class="btn ghost small" data-gen="${b.id}">${ps.length?'重新挑句':'生成帖子'}</button><button class="btn ghost small" data-delbook="${b.id}" style="color:var(--muted);border-color:var(--line)">删除</button></div>
+      <div class="chlist hidden" id="toc_${b.id}">${b.titles.map((t,i)=>`<button data-chap="${b.id}:${i}" style="${rs.has(i)?'color:var(--muted)':''}">${rs.has(i)?'✓ ':''}${esc(t)}</button>`).join('')}</div></div>`;
+  }
+  const ai=AI.get();
+  h+=`<div class="card"><h3>AI 挑句设置</h3><p>填上 DeepSeek 的 API key，就由 AI 挑每章最抓人的段落；不填就按规则自动挑。key 只存在这台手机上。</p>
+    <label class="f">API Key</label><input type="password" id="aiKey" placeholder="sk-..." value="${esc(ai.key)}" autocomplete="off">
+    <label class="f">模型</label><input type="text" id="aiModel" list="aiModels" value="${esc(ai.model)}"><datalist id="aiModels"><option value="deepseek-v4-flash"><option value="deepseek-v4-pro"></datalist>
+    <details style="margin-top:8px"><summary style="font-size:13px;color:var(--muted)">高级：接口地址（换成 Kimi、智谱等兼容接口时改这里）</summary><input type="text" id="aiBase" value="${esc(ai.base)}" style="margin-top:6px"></details>
+    <div class="row"><button class="btn small" data-act="aiSave">保存</button><button class="btn ghost small" data-act="aiTest">测试连接</button></div><p id="aiMsg"></p></div>`;
+  h+=`<div class="card"><h3>备份与恢复</h3><p>书和阅读记录都存在这台手机上。换手机、清理浏览器之前，先导出一份备份。（备份里不含 API key）</p>
+    <div class="row"><button class="btn ghost small" data-act="export">导出备份</button><label class="btn ghost small" style="cursor:pointer">从备份恢复<input type="file" hidden id="restore" accept=".json,application/json"></label></div></div>`;
+  h+=`<div class="card"><h3>节制设置</h3><p>首页每天最多显示多少条，刷完就停。</p><div class="row" style="align-items:center"><input type="number" id="cap" min="3" max="100" value="${dailyCap()}" style="width:90px"><button class="btn ghost small" data-act="cap">保存</button></div></div></div>`;
+  return h;
+}
+function setBusy(msg,p){ S.busy=msg?{msg,p:p??(S.busy&&S.busy.p)}:null; if(S.tab==='shelf') render(); }
+
+/* ============ 阅读器 ============ */
+let R={book:null,post:null,next:0};
+async function openReader(bookId,chapterIdx,post){
+  const book=S.books.find(b=>b.id===bookId); if(!book) return;
+  if(readObs){ readObs.disconnect(); readObs=null; }
+  R={book,post,next:chapterIdx};
+  $('#rTitle').textContent=book.title; $('#rBody').innerHTML='';
+  $('#rSave').classList.toggle('hidden',!post); if(post) $('#rSave').textContent=post.saved?'已收藏':'收藏';
+  $('#reader').classList.add('open'); $('#reader').scrollTop=0; document.body.style.overflow='hidden';
+  if(post) $('#rBody').insertAdjacentHTML('beforeend',`<div class="hook">「${esc(post.text)}」<br><button class="pill" id="rJump" style="margin-top:8px;color:var(--accent);border-color:var(--accent)">跳到这段 ↓</button></div>`);
+  const last = post? post.end : chapterIdx;
+  for(let i=chapterIdx;i<=last;i++) await appendChapter(i);
+  appendNext();
+}
+const readSet = b => new Set(b.read||[]);
+let readObs=null, bookSaving=Promise.resolve();
+function watchRead(el,i){
+  if(!readObs) readObs=new IntersectionObserver(es=>es.forEach(e=>{ if(e.isIntersecting){ readObs.unobserve(e.target); markChapterRead(R.book,+e.target.dataset.ci); } }),{root:$('#reader'),threshold:0});
+  el.dataset.ci=i; readObs.observe(el);
+}
+function markChapterRead(book,i){
+  const rs=readSet(book); if(rs.has(i)) return;
+  rs.add(i); book.read=[...rs].sort((a,b)=>a-b);
+  // 一条帖子覆盖的章节全部读完，帖子才算已读
+  for(const p of S.posts) if(p.bookId===book.id && !p.read && i>=p.start && i<=p.end){
+    let all=true; for(let k=p.start;k<=p.end;k++) if(!rs.has(k)) all=false;
+    if(all){ p.read=true; Store.put('po_'+p.id,p).catch(()=>{}); }
+  }
+  const snapshot={...book}; bookSaving=bookSaving.then(()=>Store.put('bk_'+book.id,snapshot)).catch(()=>{});
+}
+async function appendChapter(i){
+  const text=await loadChapter(R.book.id,i);
+  const paras=text.split('\n').map(s=>s.trim()).filter(Boolean);
+  const sec=document.createElement('section');
+  const q=R.post&&R.post.quote?R.post.text:null;
+  sec.innerHTML=`<h2>${esc(R.book.titles[i])}</h2>`+paras.map(p=>`<p>${markQuote(p,q)}</p>`).join('')+`<div class="chend">${readSet(R.book).has(i)?'✓ 已读':'— 本章完 —'}</div>`;
+  $('#rBody').appendChild(sec); R.next=i+1; watchRead(sec.querySelector('.chend'),i);
+}
+function markQuote(p,q){
+  if(!q) return esc(p);
+  for(const x of sentences(q)){ if(x.length<4) continue; const j=p.indexOf(x); if(j>=0) return esc(p.slice(0,j))+'<mark class="q">'+esc(x)+'</mark>'+markQuote(p.slice(j+x.length),q); }
+  return esc(p);
+}
+function appendNext(){
+  document.querySelector('#rBody .next')?.remove();
+  const d=document.createElement('div'); d.className='next';
+  d.innerHTML = R.next<R.book.count ? `<button class="btn ghost" id="rNext">继续读：${esc(R.book.titles[R.next])}</button>` : `<p style="color:var(--muted)">全书完</p>`;
+  $('#rBody').appendChild(d);
+}
+function closeReader(){ if(readObs){ readObs.disconnect(); readObs=null; } $('#reader').classList.remove('open'); document.body.style.overflow=''; render(); }
+
+/* ============ 弹窗 ============ */
+function ask(text){ return new Promise(res=>{ $('#mText').textContent=text; $('#modal').classList.add('open'); const done=v=>{$('#modal').classList.remove('open');$('#mYes').onclick=$('#mNo').onclick=null;res(v);}; $('#mYes').onclick=()=>done(true); $('#mNo').onclick=()=>done(false); }); }
+function toast(text){ return ask(text); }
+
+/* ============ 事件 ============ */
+async function importBook(title,chapters,cover){
+  if(!chapters.length){ await toast('没能识别出正文，换个文件试试？'); return; }
+  try{
+    setBusy('正在保存…',0);
+    const book=await saveBook(title,chapters,cover);
+    await genPosts(book);
+    reshuffle(); setBusy(null); S.tab='feed'; render(); window.scrollTo(0,0);
+    if(S.aiErr) toast('AI 没用上（'+S.aiErr+'），这本书先按规则挑了。改好后在书架点「重新挑句」。');
+    else if(!AI.get().key) toast('还没填 AI 的 API key，这次按规则挑的。去书架底部填上 key，再点「重新挑句」会更好看。');
+  }catch(e){
+    setBusy(null);
+    await toast(e&&e.code==='quota_exceeded' ? '存储空间满了：删掉一本书再试。' : '导入出错了：'+(e&&e.message||e));
+  }
+}
+document.addEventListener('click',async e=>{
+  const t=e.target.closest('[data-tab],[data-go],[data-open],[data-save],[data-act],[data-gen],[data-toc],[data-chap],[data-delbook],#rBack,#rSave,#rNext,#rJump');
+  if(!t) return;
+  if(t.dataset.tab||t.dataset.go){ S.tab=t.dataset.tab||t.dataset.go; render(); window.scrollTo(0,0); return; }
+  if(t.dataset.open){ const p=S.posts.find(x=>x.id===t.dataset.open); if(p) openReader(p.bookId,p.start,p); return; }
+  if(t.dataset.save){ const p=S.posts.find(x=>x.id===t.dataset.save); if(!p) return; p.saved=!p.saved; p.savedAt=Date.now(); render(); try{await Store.put('po_'+p.id,p);}catch(err){} return; }
+  if(t.id==='rJump'){ const m=document.querySelector('#rBody mark.q'); if(m) m.scrollIntoView({behavior:'smooth',block:'center'}); return; }
+  if(t.id==='rBack'){ closeReader(); return; }
+  if(t.id==='rSave'&&R.post){ R.post.saved=!R.post.saved; R.post.savedAt=Date.now(); t.textContent=R.post.saved?'已收藏':'收藏'; Store.put('po_'+R.post.id,R.post); return; }
+  if(t.id==='rNext'){ t.disabled=true; markChapterRead(R.book,R.next-1); await appendChapter(R.next); appendNext(); return; }
+  if(t.dataset.toc){ document.getElementById('toc_'+t.dataset.toc).classList.toggle('hidden'); return; }
+  if(t.dataset.chap){ const [b,i]=t.dataset.chap.split(':'); const p=S.posts.find(x=>x.bookId===b&&x.start<=+i&&x.end>=+i); openReader(b,+i,null); return; }
+  if(t.dataset.gen){ const b=S.books.find(x=>x.id===t.dataset.gen); if(b){ t.disabled=true; setBusy('正在挑选金句…',0.3); try{ await genPosts(b); }catch(err){} reshuffle(); setBusy(null); render(); if(S.aiErr) toast('AI 没用上（'+S.aiErr+'），先按规则挑了。'); } return; }
+  if(t.dataset.delbook){
+    const b=S.books.find(x=>x.id===t.dataset.delbook); if(!b||!(await ask(`删除《${b.title}》和它的所有帖子、收藏？`))) return;
+    setBusy('正在删除…',0);
+    for(const p of S.posts.filter(p=>p.bookId===b.id)) await Store.del('po_'+p.id);
+    for(let i=0;i<b.count;i++){ const f=await Store.get(`tx_${b.id}_${i}_0`); const n=f?f.parts||1:1; for(let k=0;k<n;k++) await Store.del(`tx_${b.id}_${i}_${k}`); }
+    await Store.del('bk_'+b.id);
+    S.posts=S.posts.filter(p=>p.bookId!==b.id); S.books=S.books.filter(x=>x.id!==b.id); setBusy(null); render(); return;
+  }
+  const act=t.dataset.act;
+  if(act==='paste'){ $('#pasteBox').classList.toggle('hidden'); return; }
+  if(act==='pasteGo'){ const title=$('#pTitle').value.trim()||'未命名'; const text=$('#pText').value; if(text.trim().length<50) return; await importBook(title,splitTxt(text)); return; }
+  if(act==='cap'){ const v=Math.max(3,Math.min(100,parseInt($('#cap').value)||15)); LS.set('cap',v); render(); return; }
+  if(act==='regenAll'){ t.disabled=true; for(const [n,b] of S.books.entries()){ setBusy(`正在重挑《${b.title}》（${n+1}/${S.books.length}）`,0.3); try{ await genPosts(b); }catch(err){} } reshuffle(); setBusy(null); render(); if(S.aiErr) toast('AI 没用上（'+S.aiErr+'），先按规则挑了。'); return; }
+  if(act==='aiSave'||act==='aiTest'){
+    const v={key:$('#aiKey').value.trim(),model:$('#aiModel').value.trim()||'deepseek-v4-flash',base:($('#aiBase').value.trim()||'https://api.deepseek.com')};
+    AI.set(v); const msg=$('#aiMsg');
+    if(act==='aiSave'){ msg.textContent='已保存。'; return; }
+    if(!v.key){ msg.textContent='先填 API key。'; return; }
+    msg.textContent='正在连接…';
+    try{
+      const j=await aiFetch('/models',{method:'GET'}); const ids=(j.data||[]).map(m=>m.id);
+      const dl=$('#aiModels'); dl.innerHTML=ids.map(id=>`<option value="${esc(id)}">`).join('');
+      msg.textContent='连接成功。'+(ids.length?'可用模型：'+ids.join('、')+(ids.includes(v.model)?'':'。注意：当前填的模型不在列表里，建议换成其中一个。'):'');
+    }catch(e){ msg.textContent='连接失败：'+aiErrText(e); }
+    return;
+  }
+  if(act==='export'){
+    try{
+      const items=await Store.all(); const blob=new Blob([JSON.stringify({app:'yiju',v:1,at:Date.now(),items})],{type:'application/json'});
+      const name='一句备份-'+today()+'.json'; const file=new File([blob],name,{type:'application/json'});
+      if(navigator.canShare&&navigator.canShare({files:[file]})){ try{ await navigator.share({files:[file],title:name}); return; }catch(e){ if(e&&e.name==='AbortError') return; } }
+      const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},2000);
+    }catch(e){ toast('导出失败：'+(e&&e.message||e)); }
+    return;
+  }
+  if(act==='demo'){ await importBook(DEMO.title,DEMO.chapters); return; }
+});
+document.addEventListener('change',async e=>{
+  if(e.target.dataset && e.target.dataset.cover){
+    const b=S.books.find(x=>x.id===e.target.dataset.cover); const f=e.target.files[0]; if(!b||!f) return;
+    try{
+      let c=null;
+      if(/\.epub$/i.test(f.name)){ c=(await parseEpub(f)).cover; }
+      else{ c=await shrinkImage(f);
+        if(!c && f.size<180000) c=await new Promise(r=>{const fr=new FileReader();fr.onload=()=>r(fr.result);fr.onerror=()=>r(null);fr.readAsDataURL(f);}); }
+      if(!c){ await toast('这张图片读不出来，换一张 JPG 或 PNG 试试？'); return; }
+      setBusy(null);
+      b.cover=c; await Store.put('bk_'+b.id,b); render();
+    }catch(err){ await toast('封面读取失败：'+(err&&err.message||err)); }
+    return;
+  }
+  if(e.target.id==='restore'){
+    const f=e.target.files[0]; if(!f) return;
+    try{
+      const data=JSON.parse(await f.text()); if(!data||data.app!=='yiju'||!Array.isArray(data.items)) throw new Error('不是「一句」的备份文件');
+      if(!(await ask(`恢复这份备份？里面有 ${data.items.filter(x=>x[1]&&x[1].kind==='book').length} 本书。同名的数据会被覆盖。`))) return;
+      setBusy('正在恢复…',0);
+      for(let i=0;i<data.items.length;i++){ await Store.put(data.items[i][0],data.items[i][1]); if(i%50===0) setBusy('正在恢复…',i/data.items.length); }
+      S.books=await Store.list('book'); S.posts=await Store.list('post'); reshuffle(); setBusy(null); render(); toast('恢复好了。');
+    }catch(err){ setBusy(null); toast('恢复失败：'+(err&&err.message||err)); }
+    return;
+  }
+  if(e.target.id!=='file') return;
+  const f=e.target.files[0]; if(!f) return;
+  try{
+    setBusy('正在读取文件…',0);
+    if(/\.epub$/i.test(f.name)){ const b=await parseEpub(f); await importBook(b.title,b.chapters,b.cover); }
+    else { const text=decodeTxt(await f.arrayBuffer()); await importBook(f.name.replace(/\.txt$/i,''),splitTxt(text)); }
+  }catch(err){ setBusy(null); await toast('文件解析失败：'+(err&&err.message||err)); }
+});
+
+/* 示例书：为演示而写的原创短文 */
+const DEMO={title:'慢下来（示例）',chapters:[
+ {title:'第一章 二十分钟',text:'每天早上醒来，第一件事是伸手去摸手机。等回过神来，二十分钟已经过去，脑子里塞满了别人的早餐、别人的争吵、别人的旅行。\n那二十分钟没有留下任何东西。说不上快乐，也说不上难过，只是一种被轻轻推着往前走的感觉，像站在一条传送带上。\n有一天我试着数了数：一个上午，我解锁手机四十一次。大多数时候，我并不知道自己想看什么，只是手指需要一个地方落下。\n于是我想，也许问题不在于看什么，而在于这种“随时可以再滑一下”的结构本身。'},
+ {title:'第二章 一句话的诱饵',text:'信息流之所以让人停不下来，是因为每一条都很短，短到你觉得“再看一条也不费事”。\n但如果每一条短短的句子背后，都连着一整章值得读完的文字呢？那条句子就不再是终点，而是一扇门。\n我开始把读过的书一章一章拆开，给每一章写一句话。写的时候才发现，能用一句话说清楚的章节，往往是真正读懂了的章节。\n点开那句话，就回到这一章的第一页。想读就读下去，不想读就收藏起来，等晚上再说。'},
+ {title:'第三章 刷完就停',text:'真正的改变来自一个小小的限制：一天只给自己十五条。\n第十五条之后，屏幕上只会出现一句话：今天就刷到这里。没有“为你推荐”，没有下拉刷新，没有无限的下一页。\n起初很不习惯，手指还会习惯性地往下拉。可是几天之后，我发现自己开始在那十五条里挑选，挑出一条最想读的，然后真的把那一章读完了。\n原来让人放下手机的，不是意志力，而是一个会结束的页面。'}
+]};
+
+/* ============ 启动 ============ */
+(async function(){
+  render();
+  await Store.init();
+  const note=$('#storageNote');
+  const standalone=(window.matchMedia&&matchMedia('(display-mode: standalone)').matches)||navigator.standalone;
+  if(!standalone && !LS.get('hideInstall',false)){ note.innerHTML='建议先把「一句」添加到主屏幕再导入书：iPhone 上主屏幕图标和 Safari 的数据是分开存的。<button id="hideInstall">知道了</button>'; note.classList.remove('hidden'); }
+  if(Store.mode==='memory'){ note.textContent='当前环境无法保存数据，关闭页面后会丢失。'; note.classList.remove('hidden'); }
+  try{ const [books,posts]=await Promise.all([Store.list('book'),Store.list('post')]); S.books=books; S.posts=posts;
+    // 旧版本只记了帖子已读：把它们覆盖的章节补进书的已读记录
+    for(const b of S.books) if(!b.read){ const rs=new Set(); S.posts.filter(p=>p.bookId===b.id&&p.read).forEach(p=>{for(let k=p.start;k<=p.end;k++)rs.add(k);}); b.read=[...rs]; }
+  }catch(e){}
+  render();
+})();
+document.addEventListener('click',e=>{ if(e.target.id==='hideInstall'){ LS.set('hideInstall',true); $('#storageNote').classList.add('hidden'); } });
+if('serviceWorker' in navigator) window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+</script>
+</body>
+</html>
