@@ -1,5 +1,5 @@
 // 离线缓存：改了代码后把版本号 +1，手机上下次打开就会更新
-const VERSION = 'yiju-v1';
+const VERSION = 'yiju-v3';
 const SHELL = ['./', './index.html', './jszip.min.js', './manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 
 self.addEventListener('install', e => {
